@@ -1,5 +1,4 @@
 {
-    "version": "1.0.0",
     "name": "jooservices/laravel-activities",
     "description": "Append-only MongoDB-backed activity timeline for Laravel applications.",
     "type": "library",

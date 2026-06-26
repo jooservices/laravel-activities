@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1] - 2026-06-26
+
+### Fixed
+
+- Remove root `version` field from `composer.json` so `composer validate --strict` passes in CI
+- Refresh `composer.lock` metadata after composer schema cleanup
+
 ## [1.0.0] - 2026-06-26
 
 ### Added
