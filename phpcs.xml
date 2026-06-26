@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<ruleset name="JOOservices Laravel Activities">
+    <description>PHP_CodeSniffer rules. Pint has priority over PHPCS on formatting.</description>
+    <rule ref="PSR12"/>
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="120"/>
+        </properties>
+        <exclude-pattern>*/src/Facades/Activity.php</exclude-pattern>
+    </rule>
+    <rule ref="PSR12.Operators.OperatorSpacing">
+        <exclude name="PSR12.Operators.OperatorSpacing.NoSpaceBefore"/>
+        <exclude name="PSR12.Operators.OperatorSpacing.NoSpaceAfter"/>
+    </rule>
+    <rule ref="Squiz.Functions.MultiLineFunctionDeclaration.BraceOnSameLine">
+        <exclude-pattern>*/tests/TestSubject.php</exclude-pattern>
+    </rule>
+    <rule ref="Squiz.WhiteSpace.ScopeClosingBrace.ContentBefore">
+        <exclude-pattern>*/src/Dto/*</exclude-pattern>
+        <exclude-pattern>*/src/Services/*</exclude-pattern>
+        <exclude-pattern>*/src/Support/*</exclude-pattern>
+        <exclude-pattern>*/tests/TestSubject.php</exclude-pattern>
+    </rule>
+    <rule ref="PSR1.Methods.CamelCapsMethodName">
+        <exclude-pattern>*/tests/*</exclude-pattern>
+    </rule>
+    <file>src</file>
+    <file>tests</file>
+    <arg value="sp"/>
+    <arg name="colors"/>
+</ruleset>

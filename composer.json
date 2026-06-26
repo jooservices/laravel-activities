@@ -1,0 +1,94 @@
+{
+    "version": "1.0.0",
+    "name": "jooservices/laravel-activities",
+    "description": "Append-only MongoDB-backed activity timeline for Laravel applications.",
+    "type": "library",
+    "keywords": ["laravel", "activities", "mongodb", "timeline", "audit-log"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "JOOservices",
+            "email": "admin@jooservices.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/jooservices/laravel-activities/issues",
+        "source": "https://github.com/jooservices/laravel-activities"
+    },
+    "require": {
+        "php": "^8.5",
+        "illuminate/database": "^12.0|^13.0",
+        "illuminate/support": "^12.0|^13.0",
+        "jooservices/dto": "^1.0",
+        "jooservices/laravel-repository": "^1.2",
+        "mongodb/laravel-mongodb": "^4.0|^5.0"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.65",
+        "laravel/pint": "^1.0",
+        "orchestra/testbench": "^10.0|^11.0",
+        "phpmd/phpmd": "^2.13",
+        "phpstan/phpstan": "^2.0",
+        "phpunit/phpunit": "^12.0",
+        "squizlabs/php_codesniffer": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "JOOservices\\LaravelActivities\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "JOOservices\\LaravelActivities\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test:coverage": "vendor/bin/phpunit --coverage-text",
+        "lint:pint": "vendor/bin/pint --test",
+        "lint:pint:fix": "vendor/bin/pint",
+        "lint:phpstan": "XDEBUG_MODE=off vendor/bin/phpstan analyse --memory-limit=256M",
+        "lint:phpmd": "php -d error_reporting=6143 vendor/bin/phpmd src text phpmd.xml",
+        "lint:phpcs": "vendor/bin/phpcs src tests --standard=phpcs.xml",
+        "lint:cs": "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff --sequential",
+        "lint:cs:fix": "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --sequential",
+        "lint": [
+            "@lint:pint",
+            "@lint:phpcs",
+            "@lint:phpstan"
+        ],
+        "lint:all": [
+            "@lint",
+            "@lint:phpmd",
+            "@lint:cs"
+        ],
+        "lint:fix": [
+            "@lint:pint:fix",
+            "@lint:cs:fix"
+        ],
+        "check": [
+            "@lint:all",
+            "@test"
+        ],
+        "ci": [
+            "@lint:all",
+            "@test:coverage"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {}
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "JOOservices\\LaravelActivities\\ActivitiesServiceProvider"
+            ],
+            "aliases": {
+                "Activity": "JOOservices\\LaravelActivities\\Facades\\Activity"
+            }
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
