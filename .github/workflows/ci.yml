@@ -62,8 +62,10 @@ jobs:
         include:
           - laravel: '12'
             testbench: '^10.0'
+            coverage: true
           - laravel: '13'
             testbench: '^11.0'
+            coverage: false
     services:
       mongodb:
         image: mongo:8
@@ -77,12 +79,38 @@ jobs:
     env:
       MONGODB_URI: mongodb://127.0.0.1:27017
       MONGODB_DATABASE: jooservices_activities_ci
+      XDEBUG_MODE: coverage
     steps:
       - uses: actions/checkout@v6
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
           extensions: mongodb
-          coverage: none
+          coverage: ${{ matrix.coverage && 'pcov' || 'none' }}
       - uses: ramsey/composer-install@v4
-      - run: composer test
+      - name: Require Laravel ${{ matrix.laravel }}
+        run: |
+          composer require --no-update \
+            "illuminate/support:^${{ matrix.laravel }}.0" \
+            "illuminate/database:^${{ matrix.laravel }}.0"
+          composer require --no-update --dev "orchestra/testbench:${{ matrix.testbench }}"
+          composer update --prefer-dist --no-interaction
+      - name: Run tests with coverage
+        if: matrix.coverage
+        run: composer test:coverage
+      - name: Run tests
+        if: ${{ !matrix.coverage }}
+        run: composer test
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: [tests-matrix]
+    if: always()
+    steps:
+      - name: Check matrix result
+        run: |
+          if [ "${{ needs.tests-matrix.result }}" != "success" ]; then
+            echo "::error::Tests matrix did not succeed"
+            exit 1
+          fi

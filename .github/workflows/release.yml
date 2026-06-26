@@ -8,15 +8,32 @@ on:
 permissions:
   contents: write
 
+env:
+  PHP_VERSION: '8.5'
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:8
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      MONGODB_URI: mongodb://127.0.0.1:27017
+      MONGODB_DATABASE: jooservices_activities_ci
     steps:
       - uses: actions/checkout@v6
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.5'
+          php-version: ${{ env.PHP_VERSION }}
           extensions: mongodb
+          coverage: none
       - uses: ramsey/composer-install@v4
       - run: composer check
       - uses: softprops/action-gh-release@v2

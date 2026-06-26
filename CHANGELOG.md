@@ -8,6 +8,9 @@ All notable changes to this project will be documented in this file.
 
 - Remove root `version` field from `composer.json` so `composer validate --strict` passes in CI
 - Refresh `composer.lock` metadata after composer schema cleanup
+- Run PHPUnit with `--no-coverage` by default so CI test jobs execute without a coverage driver
+- Align GitHub Actions test matrix with Laravel 12 and 13 dependency resolution
+- Add MongoDB service to the release workflow so `composer check` can run integration tests
 
 ## [1.0.0] - 2026-06-26
 
