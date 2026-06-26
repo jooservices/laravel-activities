@@ -25,6 +25,7 @@ activities
   subject_id, subject_type
   activity, description
   data, context
+  plugin_slug     // denormalized from context.plugin_slug for indexed queries
   actor_id, actor_type
   created_at
 ```
