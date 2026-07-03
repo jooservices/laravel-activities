@@ -18,6 +18,24 @@ final class ActivityQuery implements ActivityQueryInterface
 
     public function list(ActivityFilterDto $filter): ActivityListDto
     {
+        if ($this->usesCursorPagination($filter)) {
+            [$items, $nextCursor] = $this->activities->cursorPaginateByFilter($filter);
+            $mapped = [];
+
+            foreach ($items as $activity) {
+                $mapped[] = ActivityMapper::toDto($activity);
+            }
+
+            return new ActivityListDto(
+                items: $mapped,
+                total: count($mapped),
+                page: 1,
+                perPage: $filter->limit,
+                lastPage: $nextCursor === null ? 1 : 2,
+                nextCursor: $nextCursor,
+            );
+        }
+
         $paginator = $this->activities->paginateByFilter($filter);
         $items = [];
 
@@ -47,6 +65,15 @@ final class ActivityQuery implements ActivityQueryInterface
             activities: $base->activities,
             limit: $base->limit,
             page: $base->page,
+            cursor: $base->cursor,
+            correlationId: $base->correlationId,
+            batchId: $base->batchId,
         ));
+    }
+
+    private function usesCursorPagination(ActivityFilterDto $filter): bool
+    {
+        return $filter->page <= 1
+            || ($filter->cursor !== null && $filter->cursor !== '');
     }
 }

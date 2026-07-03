@@ -18,6 +18,8 @@ use MongoDB\Laravel\Eloquent\Model;
  * @property string|null $actor_type
  * @property array<string, mixed>|null $context
  * @property string|null $plugin_slug
+ * @property string|null $correlation_id
+ * @property string|null $batch_id
  * @property Carbon $created_at
  */
 final class Activity extends Model
@@ -53,6 +55,8 @@ final class Activity extends Model
         'actor_type',
         'context',
         'plugin_slug',
+        'correlation_id',
+        'batch_id',
         'created_at',
     ];
 

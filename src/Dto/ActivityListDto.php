@@ -17,5 +17,6 @@ final class ActivityListDto extends Dto
         public readonly int $page,
         public readonly int $perPage,
         public readonly int $lastPage,
+        public readonly ?string $nextCursor = null,
     ) {}
 }

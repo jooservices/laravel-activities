@@ -19,5 +19,8 @@ final class ActivityFilterDto extends Dto
         public readonly ?array $activities = null,
         public readonly int $limit = 50,
         public readonly int $page = 1,
+        public readonly ?string $cursor = null,
+        public readonly ?string $correlationId = null,
+        public readonly ?string $batchId = null,
     ) {}
 }
