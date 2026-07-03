@@ -43,7 +43,10 @@
     },
     "scripts": {
         "test": "vendor/bin/phpunit --no-coverage",
-        "test:coverage": "vendor/bin/phpunit --coverage-text",
+        "test:coverage": [
+            "vendor/bin/phpunit --coverage-clover build/coverage/clover.xml",
+            "@php scripts/check-coverage.php 90"
+        ],
         "lint:pint": "vendor/bin/pint --test",
         "lint:pint:fix": "vendor/bin/pint",
         "lint:phpstan": "XDEBUG_MODE=off vendor/bin/phpstan analyse --memory-limit=256M",

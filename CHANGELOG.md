@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-07-03
+
+### Added
+
+- Cursor pagination via `ActivityFilterDto::$cursor` and `ActivityListDto::$nextCursor`
+- `activities:prune` with retention days and optional context filters
+- `activities:doctor` for config, binding, MongoDB, and index readiness checks
+- `activities:export` JSONL export command
+- Data sanitization for `data` and `context` payloads
+- Official `ArrayActivityStore` for PHPUnit (`ACTIVITIES_STORE=array`)
+- Top-level `correlation_id` and `batch_id` on activity records
+- MongoDB indexes for correlation and batch fields
+- CI coverage gate at 90% via `scripts/check-coverage.php`
+
+### Changed
+
+- Default `activities:ensure-indexes` now ensures correlation/batch compound indexes
+
 ## [1.0.1] - 2026-06-26
 
 ### Fixed

@@ -22,6 +22,8 @@ final class ActivityMapper
             actorId: $activity->actor_id,
             context: $activity->context,
             createdAt: $activity->created_at->toIso8601String(),
+            correlationId: $activity->correlation_id,
+            batchId: $activity->batch_id,
         );
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace JOOservices\LaravelActivities\Tests;
 
+use Illuminate\Support\Carbon;
 use JOOservices\LaravelActivities\Contracts\ActivityQueryInterface;
 use JOOservices\LaravelActivities\Contracts\ActivityRecorderInterface;
 use JOOservices\LaravelActivities\Dto\ActivityFilterDto;
@@ -89,6 +90,88 @@ final class ActivityServiceTest extends TestCase
         $this->assertSame('crawl_target.created', $subjectList->items[0]->activity);
     }
 
+    public function test_cursor_pagination_returns_next_cursor(): void
+    {
+        $recorder = $this->app->make(ActivityRecorderInterface::class);
+        $query = $this->app->make(ActivityQueryInterface::class);
+
+        $labels = [
+            ['2026-01-01 00:00:02', 'third'],
+            ['2026-01-01 00:00:01', 'second'],
+            ['2026-01-01 00:00:00', 'first'],
+        ];
+
+        foreach ($labels as [$timestamp, $label]) {
+            Carbon::setTestNow($timestamp);
+
+            $recorder->record(new ActivityRecordDto(
+                subjectType: TestSubject::class,
+                subjectId: '20',
+                activity: 'crawl_target.created',
+                description: $label,
+            ));
+        }
+
+        Carbon::setTestNow();
+
+        $firstPage = $query->list(new ActivityFilterDto(
+            subjectType: TestSubject::class,
+            subjectId: '20',
+            limit: 2,
+            cursor: null,
+        ));
+
+        $this->assertCount(2, $firstPage->items);
+        $this->assertNotNull($firstPage->nextCursor);
+
+        $secondPage = $query->list(new ActivityFilterDto(
+            subjectType: TestSubject::class,
+            subjectId: '20',
+            limit: 2,
+            cursor: $firstPage->nextCursor,
+        ));
+
+        $this->assertCount(1, $secondPage->items);
+        $this->assertNull($secondPage->nextCursor);
+    }
+
+    public function test_sanitizer_redacts_sensitive_data_on_record(): void
+    {
+        $this->app['config']->set('activities.sanitization.sensitive_keys', ['token']);
+
+        $dto = $this->app->make(ActivityRecorderInterface::class)->record(new ActivityRecordDto(
+            subjectType: TestSubject::class,
+            subjectId: '30',
+            activity: 'secure.updated',
+            data: ['token' => 'secret'],
+        ));
+
+        $this->assertSame('[redacted]', $dto->data['token'] ?? null);
+    }
+
+    public function test_prune_and_export_commands_work(): void
+    {
+        $recorder = $this->app->make(ActivityRecorderInterface::class);
+        $recorder->record(new ActivityRecordDto(
+            subjectType: TestSubject::class,
+            subjectId: '40',
+            activity: 'crawl_target.created',
+            context: ['plugin_slug' => 'onejav'],
+        ));
+
+        $this->artisan('activities:doctor')->assertSuccessful();
+        $this->artisan('activities:prune', ['--days' => 365, '--dry-run' => true])->assertSuccessful();
+
+        $path = sys_get_temp_dir().'/activities-export-test.jsonl';
+        @unlink($path);
+
+        $this->artisan('activities:export', ['--output' => $path, '--force' => true])
+            ->assertSuccessful();
+
+        $this->assertFileExists($path);
+        @unlink($path);
+    }
+
     public function test_ensure_indexes_command_succeeds(): void
     {
         $this->artisan('activities:ensure-indexes')
@@ -97,6 +180,6 @@ final class ActivityServiceTest extends TestCase
         $indexes = $this->app->make(ActivityRepository::class)->ensureIndexes();
 
         $this->assertStringContainsString('activities_subject_created_at', $indexes);
-        $this->assertStringContainsString('activities_plugin_slug_created_at', $indexes);
+        $this->assertStringContainsString('activities_correlation_created_at', $indexes);
     }
 }

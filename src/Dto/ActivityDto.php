@@ -23,5 +23,7 @@ final class ActivityDto extends Dto
         public readonly ?string $actorId,
         public readonly ?array $context,
         public readonly string $createdAt,
+        public readonly ?string $correlationId = null,
+        public readonly ?string $batchId = null,
     ) {}
 }

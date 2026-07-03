@@ -21,5 +21,7 @@ final class ActivityRecordDto extends Dto
         public readonly ?string $actorType = null,
         public readonly ?string $actorId = null,
         public readonly ?array $context = null,
+        public readonly ?string $correlationId = null,
+        public readonly ?string $batchId = null,
     ) {}
 }

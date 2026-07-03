@@ -6,6 +6,12 @@ Append-only MongoDB-backed activity timeline for Laravel 12 and 13 applications.
 
 - Record subject-scoped activities with optional actor, description, payload, and context
 - Query activities by subject or context keys such as `plugin_slug`
+- Cursor pagination for large timelines (`cursor` / `nextCursor`)
+- Data sanitization for sensitive keys in `data` and `context`
+- Retention pruning via `php artisan activities:prune`
+- Operational checks via `php artisan activities:doctor`
+- JSONL export via `php artisan activities:export`
+- Official in-memory store for tests (`ACTIVITIES_STORE=array`)
 - DTO-first API using `jooservices/dto`
 - Repository layer using `jooservices/laravel-repository`
 - Append-only storage (`created_at` only; no `updated_at`)
@@ -103,8 +109,10 @@ This package stores **product timeline activities** only. Compliance or security
 ## Quality
 
 ```bash
-composer check
+composer ci
 ```
+
+Coverage gate: 90% minimum (`composer test:coverage`).
 
 ## License
 
