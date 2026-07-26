@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-07-26
+
 ### Changed
 
 - Require `jooservices/laravel-repository` `^1.7` and use its canonical `JOOservices\LaravelRepository\` namespace.
