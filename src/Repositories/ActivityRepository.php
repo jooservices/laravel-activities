@@ -15,8 +15,8 @@ use Illuminate\Support\Carbon;
 use JOOservices\LaravelActivities\Dto\ActivityFilterDto;
 use JOOservices\LaravelActivities\Models\Activity;
 use JOOservices\LaravelActivities\Support\ActivityCursor;
-use Jooservices\LaravelRepository\Repositories\EloquentRepository;
-use Jooservices\LaravelRepository\Traits\HasCrud;
+use JOOservices\LaravelRepository\Repositories\EloquentRepository;
+use JOOservices\LaravelRepository\Traits\HasCrud;
 use MongoDB\BSON\ObjectId;
 use MongoDB\Laravel\Connection;
 

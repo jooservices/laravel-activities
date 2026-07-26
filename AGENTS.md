@@ -2,6 +2,11 @@
 
 This repository is a Laravel package named `jooservices/laravel-activities`.
 
+
+## Mandatory PHP namespace
+
+**FORCE ALWAYS** use `JOOservices\LaravelActivities\` with the exact casing shown.
+
 ## Core intent
 
 - Provide append-only MongoDB-backed activity timelines for Laravel apps

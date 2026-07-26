@@ -2,7 +2,13 @@
     "name": "jooservices/laravel-activities",
     "description": "Append-only MongoDB-backed activity timeline for Laravel applications.",
     "type": "library",
-    "keywords": ["laravel", "activities", "mongodb", "timeline", "audit-log"],
+    "keywords": [
+        "laravel",
+        "activities",
+        "mongodb",
+        "timeline",
+        "audit-log"
+    ],
     "license": "MIT",
     "authors": [
         {
@@ -19,7 +25,7 @@
         "illuminate/database": "^12.0|^13.0",
         "illuminate/support": "^12.0|^13.0",
         "jooservices/dto": "^1.0",
-        "jooservices/laravel-repository": "^1.2",
+        "jooservices/laravel-repository": "^1.7",
         "mongodb/laravel-mongodb": "^4.0|^5.0"
     },
     "require-dev": {
