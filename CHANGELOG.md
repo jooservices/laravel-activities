@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- Require `jooservices/laravel-repository` `^1.7` and use its canonical `JOOservices\LaravelRepository\` namespace.
+- Refresh the Composer lock from published packages and update Guzzle to a release without the current security advisories.
+- Align CI and release workflow gates with protected `develop` and `master` branches.
+- Add standard CI, Codecov, OpenSSF Scorecard, PHP, license, and Packagist badges to the README.
+
 ## [1.1.0] - 2026-07-03
 
 ### Added
