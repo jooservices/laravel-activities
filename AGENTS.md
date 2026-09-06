@@ -4,7 +4,7 @@ This file adds project-only rules. Workspace root `AGENTS.md` remains canonical
 for identity, GitHub account, branch model, commit/PR language, runtime policy,
 and the general quality gate.
 
-- PHP `^8.5`, Laravel package: `laravel/framework` `^12|^13`, MongoDB via `mongodb/laravel-mongodb` `^5.7`
+- PHP `^8.5`, Laravel package: `laravel/framework` `^12|^13`, MongoDB via `mongodb/laravel-mongodb` `^5.10`
 - Runtime deps: `jooservices/dto` `^3.2`, `jooservices/laravel-repository` `^4`, `jooservices/exceptions` `^4`
 - Namespace **must** be `JOOservices\LaravelActivities\` (uppercase `OO`)
 - Store append-only admin UI timeline rows only. No dashboards, ops logging, or event sourcing

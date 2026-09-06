@@ -12,6 +12,7 @@ use JOOservices\LaravelActivities\Contracts\ActivityRecorderInterface;
 use JOOservices\LaravelActivities\Contracts\ActivitySanitizerInterface;
 use JOOservices\LaravelActivities\Repositories\ActivityRepository;
 use MongoDB\Laravel\Connection;
+use MongoDB\Model\IndexInfo;
 use Throwable;
 
 final class ActivitiesDoctorCommand extends Command
@@ -199,14 +200,22 @@ final class ActivitiesDoctorCommand extends Command
             $existing = [];
 
             foreach ($indexes as $index) {
-                $existing[] = $index->getName();
+                if (! $index instanceof IndexInfo) {
+                    continue;
+                }
+
+                $existing[$index->getName()] = $index->getKey();
             }
 
             $missing = [];
 
             foreach (ActivityRepository::expectedIndexes() as $index) {
                 $name = (string) ($index['options']['name'] ?? '');
-                if ($name !== '' && ! in_array($name, $existing, true)) {
+                if ($name === '') {
+                    continue;
+                }
+
+                if (! array_key_exists($name, $existing) || ! $this->indexKeysMatch($existing[$name], $index['keys'])) {
                     $missing[] = $name;
                 }
             }
@@ -214,7 +223,7 @@ final class ActivitiesDoctorCommand extends Command
             if ($missing !== []) {
                 return $this->warning(
                     'indexes',
-                    'Missing expected indexes: ' . implode(', ', $missing) . '. Run activities:ensure-indexes.',
+                    'Missing or mismatched expected indexes: ' . implode(', ', $missing) . '. Run activities:ensure-indexes.',
                 );
             }
 
@@ -225,6 +234,25 @@ final class ActivitiesDoctorCommand extends Command
                 'Index status check could not inspect the collection: ' . $exception->getMessage(),
             );
         }
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $actual
+     * @param  array<string, int>  $expected
+     */
+    private function indexKeysMatch(array $actual, array $expected): bool
+    {
+        $normalized = [];
+
+        foreach ($actual as $field => $value) {
+            if (! is_string($field) || (! is_int($value) && ! is_float($value))) {
+                return false;
+            }
+
+            $normalized[$field] = (int) $value;
+        }
+
+        return $normalized === $expected;
     }
 
     /**

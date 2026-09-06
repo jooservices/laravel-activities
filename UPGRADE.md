@@ -1,8 +1,8 @@
 # Upgrade guide
 
-## 1.x → next major (planned v4.0.0)
+## 1.x → 4.0.0
 
-Runtime: PHP 8.5, Laravel 12/13, `jooservices/dto ^3.2`, `jooservices/laravel-repository ^4`, `jooservices/exceptions ^4`, `mongodb/laravel-mongodb ^5.7`.
+Runtime: PHP 8.5, Laravel 12/13, `jooservices/dto ^3.2`, `jooservices/laravel-repository ^4`, `jooservices/exceptions ^4`, `mongodb/laravel-mongodb ^5.10`.
 
 ### Composer
 

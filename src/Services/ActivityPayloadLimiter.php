@@ -145,6 +145,18 @@ final class ActivityPayloadLimiter
         $kept['data'] = ['__truncated' => $this->marker()];
         $kept['context'] = ['__truncated' => $this->marker()];
 
+        $encoded = json_encode($kept);
+        if ($encoded === false || strlen($encoded) > $this->maxDocumentBytes()) {
+            if (isset($kept['description']) && is_string($kept['description'])) {
+                $kept['description'] = $this->limitString($kept['description']);
+            }
+
+            $encoded = json_encode($kept);
+            if ($encoded === false || strlen($encoded) > $this->maxDocumentBytes()) {
+                $kept['description'] = $this->marker();
+            }
+        }
+
         return $kept;
     }
 

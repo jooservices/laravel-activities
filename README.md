@@ -4,10 +4,13 @@
 [![CI](https://github.com/jooservices/laravel-activities/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/jooservices/laravel-activities/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/jooservices/laravel-activities/badge)](https://securityscorecards.dev/viewer/?uri=github.com/jooservices/laravel-activities)
 [![PHP Version](https://img.shields.io/badge/PHP-8.5%2B-blue.svg)](https://www.php.net/)
+[![Release](https://img.shields.io/badge/version-4.0.0-blue.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Packagist Version](https://img.shields.io/packagist/v/jooservices/laravel-activities)](https://packagist.org/packages/jooservices/laravel-activities)
 
 Append-only MongoDB-backed activity timeline for Laravel 12 and 13 applications.
+
+> **v4.0.0** requires `jooservices/dto` ^3.2, `jooservices/laravel-repository` ^4, and `jooservices/exceptions` ^4. See [UPGRADE.md](UPGRADE.md).
 
 ## Features
 
@@ -26,7 +29,7 @@ Append-only MongoDB-backed activity timeline for Laravel 12 and 13 applications.
 - PHP 8.5+
 - Laravel 12 or 13
 - MongoDB 6+
-- `mongodb/laravel-mongodb` ^5.7
+- `mongodb/laravel-mongodb` ^5.10
 
 ## Installation
 

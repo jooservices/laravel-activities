@@ -82,4 +82,24 @@ final class ActivityFilterMatcherTest extends UnitTestCase
             activities: ['other.event'],
         )));
     }
+
+    public function test_context_key_without_value_does_not_filter(): void
+    {
+        $row = [
+            'subject_type' => 'Demo',
+            'subject_id' => (string) $this->faker()->randomNumber(2, true),
+            'activity' => $this->faker()->slug(2),
+            'context' => ['site' => $this->faker()->slug(1)],
+            'created_at' => '2026-01-01T00:00:00+00:00',
+        ];
+
+        $this->assertTrue(ActivityFilterMatcher::matches($row, new ActivityFilterDto(
+            contextKey: 'site',
+            contextValue: null,
+        )));
+        $this->assertTrue(ActivityFilterMatcher::matches($row, new ActivityFilterDto(
+            contextKey: 'missing',
+            contextValue: null,
+        )));
+    }
 }
