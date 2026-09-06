@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Optional `tenant_id` on records, filters, indexes, prune, and export
+- `SubjectReference::fromExternal()` for non-Eloquent identities
+- `recordFor()` trailing `correlationId`, `batchId`, and `tenantId`
+- Payload limiter (depth, items, strings, 256 KiB document budget)
+- Sanitizer value patterns (Bearer / JWT / PEM) and compact/suffix key matching
+- `ActivityFilterGuard` for context-key charset and pagination mode
+- CSV export with formula-injection prefix (`activities:export --format=csv`)
+- `ActivityManager` facade root, `forActor()` helper
+- JOO hygiene: Pint `per`, PHPStan max, CaptainHook, Docker, governance docs
+
+### Changed
+
+- Require `jooservices/dto` `^3.2`, `jooservices/laravel-repository` `^4.0`, `jooservices/exceptions` `^4.0`
+- Cursor list responses no longer fake `total` / `lastPage`
+- Offset pagination is explicit (`pagination: offset`)
+- Prune uses `deleteMany`; export streams chunks with Mongo date filters
+- Production refuses `ACTIVITIES_STORE=array`
+- Writes use UTC (`CarbonImmutable::now('UTC')`)
+- Test database renamed to `jooservices_activities_testing`
+
+### Removed
+
+- `ActivityMapper` (replaced by `ActivityDtoFactory::fromModel()`)
+
 ## [1.2.0] - 2026-07-26
 
 ### Changed

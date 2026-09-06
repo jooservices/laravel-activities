@@ -9,8 +9,11 @@
          failOnWarning="true"
 >
     <testsuites>
-        <testsuite name="JOOservices Laravel Activities Test Suite">
-            <directory>tests</directory>
+        <testsuite name="unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="integration">
+            <directory>tests/Integration</directory>
         </testsuite>
     </testsuites>
     <source>
@@ -28,6 +31,6 @@
         <env name="APP_KEY" value="base64:2fl+Ktvk6xYfRg1+y+GURgM/u0bN2MTjC2i4xYHDUgo="/>
         <env name="APP_ENV" value="testing"/>
         <env name="MONGODB_URI" value="mongodb://localhost:27017"/>
-        <env name="MONGODB_DATABASE" value="jooservices_activities_test"/>
+        <env name="MONGODB_DATABASE" value="jooservices_activities_testing"/>
     </php>
 </phpunit>

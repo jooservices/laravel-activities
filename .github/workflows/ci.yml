@@ -46,6 +46,8 @@ jobs:
             command: lint:phpmd
           - name: PHP-CS-Fixer
             command: lint:cs
+          - name: Format sanity
+            command: format:sanity
     steps:
       - uses: actions/checkout@v6
       - uses: shivammathur/setup-php@v2
@@ -83,7 +85,7 @@ jobs:
           --health-retries 10
     env:
       MONGODB_URI: mongodb://127.0.0.1:27017
-      MONGODB_DATABASE: jooservices_activities_ci
+      MONGODB_DATABASE: jooservices_activities_testing
       XDEBUG_MODE: coverage
     steps:
       - uses: actions/checkout@v6
@@ -95,9 +97,7 @@ jobs:
       - uses: ramsey/composer-install@v4
       - name: Require Laravel ${{ matrix.laravel }}
         run: |
-          composer require --no-update \
-            "illuminate/support:^${{ matrix.laravel }}.0" \
-            "illuminate/database:^${{ matrix.laravel }}.0"
+          composer require --no-update "laravel/framework:^${{ matrix.laravel }}.0"
           composer require --no-update --dev "orchestra/testbench:${{ matrix.testbench }}"
           composer update --prefer-dist --no-interaction
       - name: Run tests with coverage

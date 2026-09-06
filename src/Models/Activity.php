@@ -20,6 +20,7 @@ use MongoDB\Laravel\Eloquent\Model;
  * @property string|null $plugin_slug
  * @property string|null $correlation_id
  * @property string|null $batch_id
+ * @property string|null $tenant_id
  * @property Carbon $created_at
  */
 final class Activity extends Model
@@ -28,6 +29,7 @@ final class Activity extends Model
 
     protected $connection = 'mongodb';
 
+    /** @var string */
     protected $collection = 'activities';
 
     public function __construct(array $attributes = [])
@@ -57,6 +59,7 @@ final class Activity extends Model
         'plugin_slug',
         'correlation_id',
         'batch_id',
+        'tenant_id',
         'created_at',
     ];
 
@@ -71,6 +74,6 @@ final class Activity extends Model
 
     public function getCollectionName(): string
     {
-        return $this->collection;
+        return is_string($this->collection) ? $this->collection : 'activities';
     }
 }

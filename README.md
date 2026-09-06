@@ -11,25 +11,22 @@ Append-only MongoDB-backed activity timeline for Laravel 12 and 13 applications.
 
 ## Features
 
-- Record subject-scoped activities with optional actor, description, payload, and context
-- Query activities by subject or context keys such as `plugin_slug`
-- Cursor pagination for large timelines (`cursor` / `nextCursor`)
-- Data sanitization for sensitive keys in `data` and `context`
-- Retention pruning via `php artisan activities:prune`
-- Operational checks via `php artisan activities:doctor`
-- JSONL export via `php artisan activities:export`
-- Official in-memory store for tests (`ACTIVITIES_STORE=array`)
-- DTO-first API using `jooservices/dto`
-- Repository layer using `jooservices/laravel-repository`
-- Append-only storage (`created_at` only; no `updated_at`)
-- MongoDB indexes via `php artisan activities:ensure-indexes`
+- Record subject-scoped activities with optional actor, tenant, description, payload, and context
+- Query by subject, actor, tenant, activity prefix, correlation, and date range
+- Honest cursor pagination (`hasMore` / `nextCursor`) and explicit offset mode
+- Sanitization plus payload limits for `data` and `context`
+- Retention pruning via `php artisan activities:prune` (`deleteMany`)
+- JSONL and CSV export via `php artisan activities:export`
+- Official in-memory store for consumer tests (`ACTIVITIES_STORE=array`, not production)
+- DTO-first API using `jooservices/dto` ^3
+- Repository layer using `jooservices/laravel-repository` ^4
 
 ## Requirements
 
 - PHP 8.5+
 - Laravel 12 or 13
 - MongoDB 6+
-- `mongodb/laravel-mongodb`
+- `mongodb/laravel-mongodb` ^5.7
 
 ## Installation
 
@@ -51,66 +48,56 @@ php artisan activities:ensure-indexes
 
 ## Usage
 
-Record an activity:
-
 ```php
 use JOOservices\LaravelActivities\Contracts\ActivityRecorderInterface;
-use JOOservices\LaravelActivities\Dto\ActivityRecordDto;
 
-final class CrawlTargetAdminService
-{
-    public function __construct(private readonly ActivityRecorderInterface $activities) {}
-
-    public function createTarget(object $target, object $actor): void
-    {
-        $this->activities->recordFor(
-            subject: $target,
-            activity: 'crawl_target.created',
-            actor: $actor,
-            description: 'Created crawl target',
-            data: ['url' => 'https://example.test/new'],
-            context: ['plugin_slug' => 'onejav'],
-        );
-    }
-}
+$activities->recordFor(
+    subject: $target,
+    activity: 'crawl_target.created',
+    actor: $actor,
+    description: 'Created crawl target',
+    data: ['url' => $url],
+    context: ['plugin_slug' => $slug],
+    correlationId: $correlationId,
+    tenantId: $tenantId,
+);
 ```
 
-Query activities:
+Query:
 
 ```php
-use JOOservices\LaravelActivities\Contracts\ActivityQueryInterface;
 use JOOservices\LaravelActivities\Dto\ActivityFilterDto;
 
-$timeline = app(ActivityQueryInterface::class)->list(new ActivityFilterDto(
+$timeline = $query->list(new ActivityFilterDto(
     contextKey: 'plugin_slug',
-    contextValue: 'onejav',
+    contextValue: $slug,
+    tenantId: $tenantId,
+    limit: 50,
+));
+
+$next = $timeline->nextCursor;
+$hasMore = $timeline->hasMore;
+```
+
+Offset pagination (when a total is required):
+
+```php
+$list = $query->list(new ActivityFilterDto(
+    pagination: 'offset',
+    page: 2,
     limit: 50,
 ));
 ```
 
-## Activity document shape
-
-```text
-activities
-  _id
-  subject_id
-  subject_type
-  activity
-  description
-  data
-  actor_id
-  actor_type
-  context
-  created_at
-```
-
 ## Relationship to audit systems
 
-This package stores **product timeline activities** only. Compliance or security audit logs should remain in their own dedicated tables or packages.
+This package stores **product timeline activities** only. Ops logs belong in
+`jooservices/laravel-logging`. Compliance events belong in `jooservices/laravel-events`.
 
 ## Documentation
 
 - [`docs/README.md`](docs/README.md)
+- [`UPGRADE.md`](UPGRADE.md)
 - [`AGENTS.md`](AGENTS.md)
 
 ## Quality

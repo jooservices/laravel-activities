@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use JOOservices\LaravelActivities\Dto\ActivityFilterDto;
 use JOOservices\LaravelActivities\Repositories\ActivityRepository;
+use JOOservices\LaravelActivities\Support\ActivityFilterGuard;
 
 final class PruneActivitiesCommand extends Command
 {
@@ -15,13 +16,14 @@ final class PruneActivitiesCommand extends Command
         {--days= : Override retention days}
         {--context-key= : Optional context key filter}
         {--context-value= : Optional context value filter}
+        {--tenant= : Optional tenant id filter}
         {--dry-run : Count matching activities without deleting}
         {--force : Actually delete matching activities}
         {--json : Output machine-readable JSON}';
 
     protected $description = 'Prune activities older than the configured retention window.';
 
-    public function handle(ActivityRepository $repository): int
+    public function handle(ActivityRepository $repository, ActivityFilterGuard $guard): int
     {
         $contextError = $this->validateContextOptions();
 
@@ -47,12 +49,15 @@ final class PruneActivitiesCommand extends Command
 
         $cutoff = CarbonImmutable::now('UTC')->subDays($days);
         $filter = $this->buildFilter();
-        $matched = $repository->countOlderThan($cutoff, $filter);
-        $deleted = $this->option('force')
-            ? $repository->deleteOlderThan($cutoff, $filter)
-            : 0;
+        $guard->assert($filter);
+        $result = $repository->pruneMatching($cutoff, $filter, (bool) $this->option('force'));
 
-        $this->renderResult($this->option('force') ? 'force' : 'dry-run', $matched, $deleted, $cutoff);
+        $this->renderResult(
+            $this->option('force') ? 'force' : 'dry-run',
+            $result['matched'],
+            $result['deleted'],
+            $cutoff,
+        );
 
         return self::SUCCESS;
     }
@@ -90,6 +95,8 @@ final class PruneActivitiesCommand extends Command
         return new ActivityFilterDto(
             contextKey: $this->filledOption('context-key') ? (string) $this->option('context-key') : null,
             contextValue: $this->filledOption('context-value') ? (string) $this->option('context-value') : null,
+            tenantId: $this->filledOption('tenant') ? (string) $this->option('tenant') : null,
+            limit: 1,
         );
     }
 
@@ -108,10 +115,10 @@ final class PruneActivitiesCommand extends Command
             return;
         }
 
-        $this->line('Matched: '.$matched);
-        $this->line('Deleted: '.$deleted);
-        $this->line('Mode: '.$mode);
-        $this->line('Cutoff: '.$payload['cutoff']);
+        $this->line('Matched: ' . $matched);
+        $this->line('Deleted: ' . $deleted);
+        $this->line('Mode: ' . $mode);
+        $this->line('Cutoff: ' . $payload['cutoff']);
     }
 
     private function renderError(string $message): void

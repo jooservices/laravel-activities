@@ -4,78 +4,134 @@ declare(strict_types=1);
 
 namespace JOOservices\LaravelActivities\Tests\Unit;
 
-use JOOservices\LaravelActivities\Contracts\ActivityQueryInterface;
-use JOOservices\LaravelActivities\Contracts\ActivityRecorderInterface;
 use JOOservices\LaravelActivities\Dto\ActivityFilterDto;
 use JOOservices\LaravelActivities\Dto\ActivityRecordDto;
+use JOOservices\LaravelActivities\Exceptions\InvalidActivityFilterException;
+use JOOservices\LaravelActivities\Services\ActivityPayloadLimiter;
+use JOOservices\LaravelActivities\Services\ActivityPayloadPreparer;
+use JOOservices\LaravelActivities\Support\ActivityFilterGuard;
 use JOOservices\LaravelActivities\Support\DefaultActivitySanitizer;
 use JOOservices\LaravelActivities\Testing\ArrayActivityStore;
-use JOOservices\LaravelActivities\Tests\TestCase;
 use JOOservices\LaravelActivities\Tests\TestSubject;
 
-final class ArrayActivityStoreTest extends TestCase
+final class ArrayActivityStoreTest extends UnitTestCase
 {
-    protected function setUp(): void
+    public function test_it_records_plugin_slug_and_tenant_and_correlation(): void
     {
-        parent::setUp();
-
-        $this->app['config']->set('activities.store', 'array');
-        $this->app->forgetInstance(ActivityRecorderInterface::class);
-        $this->app->forgetInstance(ActivityQueryInterface::class);
-    }
-
-    public function test_array_store_records_and_lists_without_mongodb(): void
-    {
-        $store = new ArrayActivityStore(new DefaultActivitySanitizer());
+        $store = $this->store();
+        $slug = $this->faker()->slug(1);
+        $tenant = (string) $this->faker()->randomNumber(4, true);
+        $correlation = $this->faker()->uuid();
 
         $store->record(new ActivityRecordDto(
             subjectType: TestSubject::class,
-            subjectId: '1',
-            activity: 'demo.created',
-            correlationId: 'corr-1',
-            batchId: 'batch-1',
+            subjectId: (string) $this->faker()->randomNumber(3, true),
+            activity: $this->faker()->slug(2),
+            context: ['plugin_slug' => $slug],
+            correlationId: $correlation,
+            tenantId: $tenant,
         ));
 
-        $list = $store->list(new ActivityFilterDto(correlationId: 'corr-1'));
+        $list = $store->list(new ActivityFilterDto(
+            contextKey: 'plugin_slug',
+            contextValue: $slug,
+            tenantId: $tenant,
+            correlationId: $correlation,
+        ));
 
-        $this->assertSame(1, $list->total);
-        $this->assertSame('corr-1', $list->items[0]->correlationId);
-        $this->assertSame('batch-1', $list->items[0]->batchId);
+        $this->assertCount(1, $list->items);
+        $this->assertSame($slug, $list->items[0]->pluginSlug);
+        $this->assertSame($tenant, $list->items[0]->tenantId);
+        $this->assertNull($list->total);
+        $this->assertFalse($list->hasMore);
     }
 
-    public function test_array_store_supports_record_for_and_flush(): void
+    public function test_it_caps_limit_and_does_not_fake_totals(): void
     {
-        $store = new ArrayActivityStore(new DefaultActivitySanitizer());
+        $store = $this->store(maxLimit: 2);
+        $subjectId = (string) $this->faker()->randomNumber(3, true);
 
-        $store->recordFor(
-            subject: new TestSubject(2),
-            activity: 'demo.updated',
-            actor: new TestSubject(1),
-            description: 'Updated',
-        );
-
-        $this->assertSame(1, $store->list(new ActivityFilterDto())->total);
-
-        $store->flush();
-
-        $this->assertSame(0, $store->list(new ActivityFilterDto())->total);
-    }
-
-    public function test_array_store_supports_offset_pagination(): void
-    {
-        $store = new ArrayActivityStore(new DefaultActivitySanitizer());
-
-        foreach (range(1, 3) as $index) {
+        foreach (range(1, 3) as $ignored) {
             $store->record(new ActivityRecordDto(
                 subjectType: TestSubject::class,
-                subjectId: (string) $index,
-                activity: 'demo.created',
+                subjectId: $subjectId,
+                activity: $this->faker()->slug(2),
             ));
         }
 
-        $secondPage = $store->list(new ActivityFilterDto(limit: 2, page: 2));
+        $this->expectException(InvalidActivityFilterException::class);
+        $store->list(new ActivityFilterDto(subjectId: $subjectId, limit: 50));
+    }
 
-        $this->assertSame(3, $secondPage->total);
-        $this->assertCount(1, $secondPage->items);
+    public function test_offset_pagination_returns_real_total(): void
+    {
+        $store = $this->store();
+        $subjectId = (string) $this->faker()->randomNumber(3, true);
+
+        foreach (range(1, 3) as $ignored) {
+            $store->record(new ActivityRecordDto(
+                subjectType: TestSubject::class,
+                subjectId: $subjectId,
+                activity: $this->faker()->slug(2),
+            ));
+        }
+
+        $page = $store->list(new ActivityFilterDto(
+            subjectId: $subjectId,
+            pagination: 'offset',
+            limit: 2,
+            page: 2,
+        ));
+
+        $this->assertSame(3, $page->total);
+        $this->assertSame(2, $page->lastPage);
+        $this->assertCount(1, $page->items);
+    }
+
+    public function test_for_subject_and_actor_forward_filters(): void
+    {
+        $store = $this->store();
+        $subject = new TestSubject($this->faker()->numberBetween(1, 99));
+        $actor = new TestSubject($this->faker()->numberBetween(1, 99));
+        $activity = $this->faker()->slug(2);
+
+        $store->recordFor($subject, $activity, $actor);
+
+        $forSubject = $store->forSubject($subject);
+        $forActor = $store->forActor($actor);
+
+        $this->assertCount(1, $forSubject->items);
+        $this->assertCount(1, $forActor->items);
+        $this->assertSame($activity, $forSubject->items[0]->activity);
+    }
+
+    public function test_record_for_keeps_correlation_and_tenant(): void
+    {
+        $store = $this->store();
+        $correlation = $this->faker()->uuid();
+        $tenant = (string) $this->faker()->randomNumber(3, true);
+
+        $dto = $store->recordFor(
+            subject: new TestSubject($this->faker()->numberBetween(1, 99)),
+            activity: $this->faker()->slug(2),
+            correlationId: $correlation,
+            tenantId: $tenant,
+        );
+
+        $this->assertSame($correlation, $dto->correlationId);
+        $this->assertSame($tenant, $dto->tenantId);
+
+        $store->flush();
+        $empty = $store->list(new ActivityFilterDto());
+        $this->assertCount(0, $empty->items);
+    }
+
+    private function store(int $maxLimit = 100): ArrayActivityStore
+    {
+        $sanitizer = new DefaultActivitySanitizer(keys: ['password'], replacement: '[redacted]');
+        $preparer = new ActivityPayloadPreparer($sanitizer, new ActivityPayloadLimiter([]));
+        $guard = new ActivityFilterGuard(allow: [], maxLimit: $maxLimit);
+
+        return new ArrayActivityStore($preparer, $guard);
     }
 }
