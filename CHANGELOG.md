@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-09-06
+
 ### Added
 
 - Optional `tenant_id` on records, filters, indexes, prune, and export
@@ -80,3 +82,10 @@ All notable changes to this project will be documented in this file.
 - `Activity` facade with `record`, `recordFor`, `list`, and `forSubject`
 - `activities:ensure-indexes` Artisan command
 - Laravel 12 and 13 support via Orchestra Testbench CI matrix
+
+[Unreleased]: https://github.com/jooservices/laravel-activities/compare/v4.0.0...HEAD
+[4.0.0]: https://github.com/jooservices/laravel-activities/compare/v1.2.0...v4.0.0
+[1.2.0]: https://github.com/jooservices/laravel-activities/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/jooservices/laravel-activities/compare/v1.0.1...v1.1.0
+[1.0.1]: https://github.com/jooservices/laravel-activities/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/jooservices/laravel-activities/releases/tag/v1.0.0
