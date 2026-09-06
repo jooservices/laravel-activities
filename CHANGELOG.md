@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-09-06
+
+### Added
+
+- Optional `tenant_id` on records, filters, indexes, prune, and export
+- `SubjectReference::fromExternal()` for non-Eloquent identities
+- `recordFor()` trailing `correlationId`, `batchId`, and `tenantId`
+- Payload limiter (depth, items, strings, 256 KiB document budget)
+- Sanitizer value patterns (Bearer / JWT / PEM) and compact/suffix key matching
+- `ActivityFilterGuard` for context-key charset and pagination mode
+- CSV export with formula-injection prefix (`activities:export --format=csv`)
+- `ActivityManager` facade root, `forActor()` helper
+- JOO hygiene: Pint `per`, PHPStan max, CaptainHook, Docker, governance docs
+- Dev toolchain: PHPUnit `^12|^13`, PHPCS `^4`, Pint `^1.30`, Larastan `^3.11`
+
+### Changed
+
+- Require `jooservices/dto` `^3.2`, `jooservices/laravel-repository` `^4.0`, `jooservices/exceptions` `^4.0`
+- Cursor list responses no longer fake `total` / `lastPage`
+- Offset pagination is explicit (`pagination: offset`)
+- Prune uses `deleteMany`; export streams chunks with Mongo date filters
+- Production refuses `ACTIVITIES_STORE=array`
+- `activities:doctor --check-indexes` compares index keys, not only names
+- Array-store context matching skips a key when `contextValue` is null (same as Mongo)
+- Writes use UTC (`CarbonImmutable::now('UTC')`)
+- Test database renamed to `jooservices_activities_testing`
+
+### Removed
+
+- `ActivityMapper` (replaced by `ActivityDtoFactory::fromModel()`)
+
 ## [1.2.0] - 2026-07-26
 
 ### Changed
@@ -53,3 +84,10 @@ All notable changes to this project will be documented in this file.
 - `Activity` facade with `record`, `recordFor`, `list`, and `forSubject`
 - `activities:ensure-indexes` Artisan command
 - Laravel 12 and 13 support via Orchestra Testbench CI matrix
+
+[Unreleased]: https://github.com/jooservices/laravel-activities/compare/v4.0.0...HEAD
+[4.0.0]: https://github.com/jooservices/laravel-activities/compare/v1.2.0...v4.0.0
+[1.2.0]: https://github.com/jooservices/laravel-activities/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/jooservices/laravel-activities/compare/v1.0.1...v1.1.0
+[1.0.1]: https://github.com/jooservices/laravel-activities/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/jooservices/laravel-activities/releases/tag/v1.0.0

@@ -12,7 +12,7 @@
 
 ## Flow
 
-`Service -> ActivityRecorderInterface -> ActivityRepository -> MongoDB activities collection`
+`Service -> ActivityRecorderInterface -> ActivityPayloadPreparer -> ActivityRepository -> MongoDB activities collection`
 
 Query flow:
 
@@ -27,6 +27,8 @@ activities
   data, context
   plugin_slug     // denormalized from context.plugin_slug for indexed queries
   actor_id, actor_type
+  tenant_id
+  correlation_id, batch_id
   created_at
 ```
 

@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace JOOservices\LaravelActivities\Support;
 
 use DateTimeInterface;
-use InvalidArgumentException;
+use JOOservices\LaravelActivities\Exceptions\InvalidActivityCursorException;
 
 final class ActivityCursor
 {
     public static function encode(DateTimeInterface $createdAt, string $id): string
     {
-        return base64_encode($createdAt->format(DateTimeInterface::ATOM).'|'.$id);
+        return base64_encode($createdAt->format(DateTimeInterface::ATOM) . '|' . $id);
     }
 
     /**
@@ -22,13 +22,13 @@ final class ActivityCursor
         $decoded = base64_decode($cursor, true);
 
         if (! is_string($decoded) || ! str_contains($decoded, '|')) {
-            throw new InvalidArgumentException('Invalid activity cursor.');
+            throw InvalidActivityCursorException::malformed();
         }
 
         [$createdAt, $id] = explode('|', $decoded, 2);
 
         if ($createdAt === '' || $id === '') {
-            throw new InvalidArgumentException('Invalid activity cursor.');
+            throw InvalidActivityCursorException::malformed();
         }
 
         return [$createdAt, $id];

@@ -6,6 +6,7 @@ namespace JOOservices\LaravelActivities\Console\Commands;
 
 use Illuminate\Console\Command;
 use JOOservices\LaravelActivities\Repositories\ActivityRepository;
+use Throwable;
 
 final class EnsureActivityIndexesCommand extends Command
 {
@@ -17,8 +18,8 @@ final class EnsureActivityIndexesCommand extends Command
     {
         try {
             $indexes = $activities->ensureIndexes();
-        } catch (\Throwable $exception) {
-            $this->error('Failed to ensure MongoDB indexes: '.$exception->getMessage());
+        } catch (Throwable $exception) {
+            $this->error('Failed to ensure MongoDB indexes: ' . $exception->getMessage());
 
             return self::FAILURE;
         }

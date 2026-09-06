@@ -12,4 +12,6 @@ interface ActivityQueryInterface
     public function list(ActivityFilterDto $filter): ActivityListDto;
 
     public function forSubject(object $subject, ?ActivityFilterDto $filter = null): ActivityListDto;
+
+    public function forActor(object $actor, ?ActivityFilterDto $filter = null): ActivityListDto;
 }

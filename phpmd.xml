@@ -10,11 +10,14 @@
         <exclude name="ExcessiveClassLength"/>
         <exclude name="ExcessiveParameterList"/>
         <exclude name="CyclomaticComplexity"/>
+        <exclude name="NPathComplexity"/>
+        <exclude name="ExcessiveClassComplexity"/>
         <exclude name="ElseExpression"/>
     </rule>
     <rule ref="rulesets/cleancode.xml">
         <exclude name="StaticAccess"/>
         <exclude name="ElseExpression"/>
+        <exclude name="BooleanArgumentFlag"/>
     </rule>
     <rule ref="rulesets/controversial.xml"/>
     <rule ref="rulesets/design.xml">

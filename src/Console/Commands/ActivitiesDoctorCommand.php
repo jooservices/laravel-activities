@@ -12,13 +12,15 @@ use JOOservices\LaravelActivities\Contracts\ActivityRecorderInterface;
 use JOOservices\LaravelActivities\Contracts\ActivitySanitizerInterface;
 use JOOservices\LaravelActivities\Repositories\ActivityRepository;
 use MongoDB\Laravel\Connection;
+use MongoDB\Model\IndexInfo;
 use Throwable;
 
 final class ActivitiesDoctorCommand extends Command
 {
     protected $signature = 'activities:doctor
         {--json : Output machine-readable JSON}
-        {--check-indexes : Verify expected MongoDB indexes exist}';
+        {--check-indexes : Verify expected MongoDB indexes exist}
+        {--strict : Treat warnings as failures}';
 
     protected $description = 'Inspect activities configuration, bindings, and MongoDB readiness.';
 
@@ -26,6 +28,7 @@ final class ActivitiesDoctorCommand extends Command
     {
         $checks = [
             $this->checkConfigLoaded(),
+            $this->checkStore(),
             $this->checkMongoConnection(),
             $this->checkBindings(),
             $this->checkSanitizerConfig(),
@@ -62,10 +65,32 @@ final class ActivitiesDoctorCommand extends Command
     /**
      * @return array{name: string, status: string, message: string}
      */
+    private function checkStore(): array
+    {
+        $store = (string) config('activities.store', 'mongodb');
+
+        if (! in_array($store, ['mongodb', 'array'], true)) {
+            return $this->failed('store', "Unknown store [{$store}].");
+        }
+
+        if ($store === 'array' && $this->laravel->environment('production')) {
+            return $this->failed('store', 'Array store is not allowed in production.');
+        }
+
+        if ($store === 'array') {
+            return $this->warning('store', 'Array store is enabled; records will not persist.');
+        }
+
+        return $this->passed('store', 'MongoDB store is configured.');
+    }
+
+    /**
+     * @return array{name: string, status: string, message: string}
+     */
     private function checkMongoConnection(): array
     {
         if (config('activities.store') === 'array') {
-            return $this->passed('mongodb.connection', 'Array store enabled; MongoDB connection not required.');
+            return $this->warning('mongodb.connection', 'Array store enabled; MongoDB connection not required.');
         }
 
         try {
@@ -87,7 +112,7 @@ final class ActivitiesDoctorCommand extends Command
                 "MongoDB collection [{$connectionName}.{$collectionName}] is reachable.",
             );
         } catch (Throwable $exception) {
-            return $this->failed('mongodb.connection', 'MongoDB reachability check failed: '.$exception->getMessage());
+            return $this->failed('mongodb.connection', 'MongoDB reachability check failed: ' . $exception->getMessage());
         }
     }
 
@@ -132,14 +157,13 @@ final class ActivitiesDoctorCommand extends Command
     private function checkRetentionConfig(): array
     {
         $days = config('activities.retention.default_days');
-        $chunk = config('activities.retention.chunk_size');
 
         if (! is_int($days) || $days < 1) {
             return $this->failed('retention', 'Retention default_days must be a positive integer.');
         }
 
-        if (! is_int($chunk) || $chunk < 1) {
-            return $this->failed('retention', 'Retention chunk_size must be a positive integer.');
+        if ((bool) config('activities.retention.enabled', true) === false) {
+            return $this->warning('retention', 'Retention is disabled.');
         }
 
         return $this->passed('retention', 'Retention config is valid.');
@@ -173,19 +197,33 @@ final class ActivitiesDoctorCommand extends Command
             }
 
             $indexes = iterator_to_array($connection->getCollection($collectionName)->listIndexes());
-            $existing = array_map(static fn (mixed $index): array => $index->getKey(), $indexes);
+            $existing = [];
+
+            foreach ($indexes as $index) {
+                if (! $index instanceof IndexInfo) {
+                    continue;
+                }
+
+                $existing[$index->getName()] = $index->getKey();
+            }
+
             $missing = [];
 
             foreach (ActivityRepository::expectedIndexes() as $index) {
-                if (! in_array($index['keys'], $existing, true)) {
-                    $missing[] = json_encode($index['keys'], JSON_THROW_ON_ERROR);
+                $name = (string) ($index['options']['name'] ?? '');
+                if ($name === '') {
+                    continue;
+                }
+
+                if (! array_key_exists($name, $existing) || ! $this->indexKeysMatch($existing[$name], $index['keys'])) {
+                    $missing[] = $name;
                 }
             }
 
             if ($missing !== []) {
                 return $this->warning(
                     'indexes',
-                    'Missing expected indexes: '.implode(', ', $missing).'. Run activities:ensure-indexes.',
+                    'Missing or mismatched expected indexes: ' . implode(', ', $missing) . '. Run activities:ensure-indexes.',
                 );
             }
 
@@ -193,9 +231,28 @@ final class ActivitiesDoctorCommand extends Command
         } catch (Throwable $exception) {
             return $this->warning(
                 'indexes',
-                'Index status check could not inspect the collection: '.$exception->getMessage(),
+                'Index status check could not inspect the collection: ' . $exception->getMessage(),
             );
         }
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $actual
+     * @param  array<string, int>  $expected
+     */
+    private function indexKeysMatch(array $actual, array $expected): bool
+    {
+        $normalized = [];
+
+        foreach ($actual as $field => $value) {
+            if (! is_string($field) || (! is_int($value) && ! is_float($value))) {
+                return false;
+            }
+
+            $normalized[$field] = (int) $value;
+        }
+
+        return $normalized === $expected;
     }
 
     /**
@@ -215,7 +272,7 @@ final class ActivitiesDoctorCommand extends Command
         $this->table(
             ['Check', 'Status', 'Message'],
             array_map(
-                static fn (array $check): array => [$check['name'], strtoupper($check['status']), $check['message']],
+                static fn(array $check): array => [$check['name'], strtoupper($check['status']), $check['message']],
                 $checks,
             ),
         );
@@ -230,6 +287,10 @@ final class ActivitiesDoctorCommand extends Command
             if ($check['status'] === 'fail') {
                 return self::FAILURE;
             }
+
+            if ($this->option('strict') && $check['status'] === 'warn') {
+                return self::FAILURE;
+            }
         }
 
         return self::SUCCESS;
@@ -242,7 +303,15 @@ final class ActivitiesDoctorCommand extends Command
     {
         $statuses = array_column($checks, 'status');
 
-        return in_array('fail', $statuses, true) ? 'fail' : (in_array('warn', $statuses, true) ? 'warn' : 'pass');
+        if (in_array('fail', $statuses, true)) {
+            return 'fail';
+        }
+
+        if (in_array('warn', $statuses, true)) {
+            return 'warn';
+        }
+
+        return 'pass';
     }
 
     /**
