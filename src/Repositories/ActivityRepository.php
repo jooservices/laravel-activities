@@ -5,30 +5,51 @@ declare(strict_types=1);
 namespace JOOservices\LaravelActivities\Repositories;
 
 use Carbon\CarbonImmutable;
+use Closure;
 use DateTimeInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection as BaseCollection;
 use JOOservices\LaravelActivities\Dto\ActivityFilterDto;
 use JOOservices\LaravelActivities\Models\Activity;
 use JOOservices\LaravelActivities\Support\ActivityCursor;
+use JOOservices\LaravelRepository\Contracts\CrudRepositoryInterface;
 use JOOservices\LaravelRepository\Repositories\EloquentRepository;
+use JOOservices\LaravelRepository\Support\Filter;
 use JOOservices\LaravelRepository\Traits\HasCrud;
+use JOOservices\LaravelRepository\Traits\HasFilter;
+use JOOservices\LaravelRepository\Traits\HasIteration;
+use JOOservices\LaravelRepository\Traits\HasOrder;
+use JOOservices\LaravelRepository\Traits\HasRead;
 use MongoDB\BSON\ObjectId;
 use MongoDB\Laravel\Connection;
 
-final class ActivityRepository extends EloquentRepository
+final class ActivityRepository extends EloquentRepository implements CrudRepositoryInterface
 {
     use HasCrud;
+    use HasFilter;
+    use HasIteration;
+    use HasOrder;
+    use HasRead;
 
     public function __construct(Activity $model)
     {
         parent::__construct($model);
     }
 
+    public function fresh(): self
+    {
+        $model = $this->getModel();
+
+        return new self($model instanceof Activity ? $model : new Activity());
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public function createActivity(array $data): Activity
     {
         /** @var Activity $activity */
@@ -42,12 +63,10 @@ final class ActivityRepository extends EloquentRepository
      */
     public function paginateByFilter(ActivityFilterDto $filter): LengthAwarePaginator
     {
-        $this->resetQueryState();
-
         $perPage = min($filter->limit, (int) config('activities.max_limit', 100));
         $page = max(1, $filter->page);
-
-        $query = $this->filterQuery($filter)
+        $repo = $this->applyFilter($filter);
+        $query = $repo->getQuery()
             ->orderByDesc('created_at')
             ->orderByDesc('_id');
 
@@ -68,10 +87,9 @@ final class ActivityRepository extends EloquentRepository
      */
     public function cursorPaginateByFilter(ActivityFilterDto $filter): array
     {
-        $this->resetQueryState();
-
         $limit = min($filter->limit, (int) config('activities.max_limit', 100));
-        $query = $this->filterQuery($filter);
+        $repo = $this->applyFilter($filter);
+        $query = $repo->getQuery();
         $this->applyCursorFilter($query->getQuery(), $filter);
 
         /** @var Collection<int, Activity> $items */
@@ -96,44 +114,56 @@ final class ActivityRepository extends EloquentRepository
     }
 
     /**
-     * @return Collection<int, Activity>
+     * @return array{matched: int, deleted: int}
      */
-    public function latestByFilter(ActivityFilterDto $filter, int $limit): Collection
+    public function pruneMatching(DateTimeInterface $cutoff, ActivityFilterDto $filter, bool $delete): array
     {
-        $this->resetQueryState();
+        $repo = $this->applyFilter($filter);
+        $query = $repo->getQuery()->where('created_at', '<', CarbonImmutable::instance($cutoff));
+        $matched = $query->count();
 
-        return $this->filterQuery($filter)
-            ->orderByDesc('created_at')
-            ->orderByDesc('_id')
-            ->limit($limit)
-            ->get();
+        if ($delete === false || $matched === 0) {
+            return ['matched' => $matched, 'deleted' => 0];
+        }
+
+        $rawDeleted = $query->delete();
+        $deleted = is_int($rawDeleted)
+            ? $rawDeleted
+            : (is_numeric($rawDeleted) ? (int) $rawDeleted : 0);
+
+        return ['matched' => $matched, 'deleted' => max(0, $deleted)];
     }
 
-    public function deleteOlderThan(DateTimeInterface $cutoff, ?ActivityFilterDto $filter = null): int
+    /**
+     * @param  Closure(BaseCollection<int, Activity>, int): mixed  $callback
+     */
+    public function exportChunk(ActivityFilterDto $filter, int $chunkSize, Closure $callback): void
     {
-        $this->resetQueryState();
+        $chunkSize = max(1, $chunkSize);
+        $repo = $this->applyFilter($filter);
+        $query = $repo->getQuery()
+            ->orderByDesc('created_at')
+            ->orderByDesc('_id');
 
-        $query = $this->filterQuery($filter ?? new ActivityFilterDto())
-            ->where('created_at', '<', CarbonImmutable::instance($cutoff));
+        $batch = new BaseCollection();
+        $page = 0;
 
-        $deleted = 0;
+        foreach ($query->cursor() as $record) {
+            if (! $record instanceof Activity) {
+                continue;
+            }
 
-        foreach ($query->cursor() as $activity) {
-            if ($activity->delete() === true) {
-                $deleted++;
+            $batch->push($record);
+
+            if ($batch->count() >= $chunkSize) {
+                $callback($batch, ++$page);
+                $batch = new BaseCollection();
             }
         }
 
-        return $deleted;
-    }
-
-    public function countOlderThan(DateTimeInterface $cutoff, ?ActivityFilterDto $filter = null): int
-    {
-        $this->resetQueryState();
-
-        return $this->filterQuery($filter ?? new ActivityFilterDto())
-            ->where('created_at', '<', CarbonImmutable::instance($cutoff))
-            ->count();
+        if ($batch->count() > 0) {
+            $callback($batch, ++$page);
+        }
     }
 
     /**
@@ -158,6 +188,22 @@ final class ActivityRepository extends EloquentRepository
                 'keys' => ['batch_id' => 1, 'created_at' => -1],
                 'options' => ['name' => 'activities_batch_created_at'],
             ],
+            [
+                'keys' => ['activity' => 1, 'created_at' => -1],
+                'options' => ['name' => 'activities_activity_created_at'],
+            ],
+            [
+                'keys' => ['created_at' => -1],
+                'options' => ['name' => 'activities_created_at'],
+            ],
+            [
+                'keys' => ['tenant_id' => 1, 'created_at' => -1],
+                'options' => ['name' => 'activities_tenant_created_at'],
+            ],
+            [
+                'keys' => ['actor_type' => 1, 'actor_id' => 1, 'created_at' => -1],
+                'options' => ['name' => 'activities_actor_created_at'],
+            ],
         ];
     }
 
@@ -180,83 +226,60 @@ final class ActivityRepository extends EloquentRepository
 
     public function flushAll(): void
     {
-        $this->resetQueryState();
-        $this->getModel()->newQuery()->delete();
+        $this->fresh()->getModel()->newQuery()->delete();
     }
 
-    private function resetQueryState(): void
+    private function applyFilter(ActivityFilterDto $filter): self
     {
-        $this->query = null;
+        $repo = $this->fresh();
+        $filters = [];
+
+        $this->pushEquality($filters, 'subject_type', $filter->subjectType);
+        $this->pushEquality($filters, 'subject_id', $filter->subjectId);
+        $this->pushEquality($filters, 'actor_type', $filter->actorType);
+        $this->pushEquality($filters, 'actor_id', $filter->actorId);
+        $this->pushEquality($filters, 'correlation_id', $filter->correlationId);
+        $this->pushEquality($filters, 'batch_id', $filter->batchId);
+        $this->pushEquality($filters, 'tenant_id', $filter->tenantId);
+
+        if ($filter->activityPrefix !== null && $filter->activityPrefix !== '') {
+            $filters[] = new Filter('activity', $filter->activityPrefix, 'beginsWith');
+        }
+
+        if ($filter->from !== null && $filter->from !== '') {
+            $filters[] = new Filter('created_at', Carbon::parse($filter->from), '>=');
+        }
+
+        if ($filter->to !== null && $filter->to !== '') {
+            $filters[] = new Filter('created_at', Carbon::parse($filter->to), '<');
+        }
+
+        if ($filter->contextKey !== null && $filter->contextKey !== '' && $filter->contextValue !== null) {
+            $contextField = $filter->contextKey === 'plugin_slug'
+                ? 'plugin_slug'
+                : 'context.' . $filter->contextKey;
+            $filters[] = new Filter($contextField, $filter->contextValue);
+        }
+
+        if ($filters !== []) {
+            $repo->filter($filters);
+        }
+
+        if ($filter->activities !== null && $filter->activities !== []) {
+            $repo->getQuery()->whereIn('activity', $filter->activities);
+        }
+
+        return $repo;
     }
 
     /**
-     * @return Builder<Activity>
+     * @param  list<Filter>  $filters
      */
-    private function filterQuery(ActivityFilterDto $filter): Builder
+    private function pushEquality(array &$filters, string $field, ?string $value): void
     {
-        $this->resetQueryState();
-
-        /** @var Builder<Activity> $query */
-        $query = $this->getModel()->newQuery();
-        $mongoQuery = $query->getQuery();
-
-        $this->applySubjectFilter($mongoQuery, $filter);
-        $this->applyContextFilter($mongoQuery, $filter);
-        $this->applyActivitiesFilter($mongoQuery, $filter);
-        $this->applyCorrelationFilter($mongoQuery, $filter);
-        $this->applyBatchFilter($mongoQuery, $filter);
-
-        return $query;
-    }
-
-    private function applySubjectFilter(QueryBuilder $mongoQuery, ActivityFilterDto $filter): void
-    {
-        if ($filter->subjectType !== null && $filter->subjectType !== '') {
-            $mongoQuery->where('subject_type', '=', $filter->subjectType);
+        if ($value !== null && $value !== '') {
+            $filters[] = new Filter($field, $value);
         }
-
-        if ($filter->subjectId !== null && $filter->subjectId !== '') {
-            $mongoQuery->where('subject_id', '=', $filter->subjectId);
-        }
-    }
-
-    private function applyContextFilter(QueryBuilder $mongoQuery, ActivityFilterDto $filter): void
-    {
-        if ($filter->contextKey === null || $filter->contextKey === '' || $filter->contextValue === null) {
-            return;
-        }
-
-        $contextField = $filter->contextKey === 'plugin_slug'
-            ? 'plugin_slug'
-            : 'context.'.$filter->contextKey;
-        $mongoQuery->where($contextField, '=', $filter->contextValue);
-    }
-
-    private function applyActivitiesFilter(QueryBuilder $mongoQuery, ActivityFilterDto $filter): void
-    {
-        if ($filter->activities === null || $filter->activities === []) {
-            return;
-        }
-
-        $mongoQuery->whereIn('activity', $filter->activities);
-    }
-
-    private function applyCorrelationFilter(QueryBuilder $mongoQuery, ActivityFilterDto $filter): void
-    {
-        if ($filter->correlationId === null || $filter->correlationId === '') {
-            return;
-        }
-
-        $mongoQuery->where('correlation_id', '=', $filter->correlationId);
-    }
-
-    private function applyBatchFilter(QueryBuilder $mongoQuery, ActivityFilterDto $filter): void
-    {
-        if ($filter->batchId === null || $filter->batchId === '') {
-            return;
-        }
-
-        $mongoQuery->where('batch_id', '=', $filter->batchId);
     }
 
     private function applyCursorFilter(QueryBuilder $mongoQuery, ActivityFilterDto $filter): void

@@ -5,59 +5,149 @@ declare(strict_types=1);
 namespace JOOservices\LaravelActivities\Support;
 
 use JOOservices\LaravelActivities\Contracts\ActivitySanitizerInterface;
+use JsonSerializable;
+use Throwable;
+use Traversable;
 
 final class DefaultActivitySanitizer implements ActivitySanitizerInterface
 {
+    /**
+     * @param  list<string>  $keys
+     * @param  list<string>  $patterns
+     * @param  list<string>  $valuePatterns
+     */
+    public function __construct(
+        private readonly array $keys,
+        private readonly string $replacement,
+        private readonly bool $enabled = true,
+        private readonly bool $caseSensitive = false,
+        private readonly array $patterns = [],
+        private readonly array $valuePatterns = [],
+    ) {
+    }
+
     public function sanitize(?array $payload): ?array
     {
-        if ($payload === null || (bool) config('activities.sanitization.enabled', true) === false) {
+        if ($payload === null || $this->enabled === false) {
             return $payload;
         }
 
-        /** @var array<string, mixed> $sanitized */
-        $sanitized = $payload;
-        $replacement = (string) config('activities.sanitization.redacted_value', '[redacted]');
-        $caseSensitive = (bool) config('activities.sanitization.case_sensitive', false);
-        /** @var list<string> $keys */
-        $keys = array_values((array) config('activities.sanitization.sensitive_keys', []));
-
-        return $this->sanitizeArray($sanitized, $keys, $replacement, $caseSensitive);
+        return $this->sanitizeArray($payload);
     }
 
     /**
-     * @param  array<string, mixed>  $payload
-     * @param  list<string>  $keys
-     * @return array<string, mixed>
+     * @param  array<array-key, mixed>  $payload
+     * @return array<array-key, mixed>
      */
-    private function sanitizeArray(array $payload, array $keys, string $replacement, bool $caseSensitive): array
+    private function sanitizeArray(array $payload): array
     {
         foreach ($payload as $key => $value) {
-            if ($this->isSensitiveKey($key, $keys, $caseSensitive)) {
-                $payload[$key] = $replacement;
+            if (is_string($key) && $this->isSensitiveKey($key)) {
+                $payload[$key] = $this->replacement;
 
                 continue;
             }
 
-            if (is_array($value)) {
-                /** @var array<string, mixed> $value */
-                $payload[$key] = $this->sanitizeArray($value, $keys, $replacement, $caseSensitive);
-            }
+            $payload[$key] = $this->sanitizeValue($value);
         }
 
         return $payload;
     }
 
-    /**
-     * @param  list<string>  $keys
-     */
-    private function isSensitiveKey(string $key, array $keys, bool $caseSensitive): bool
+    private function sanitizeValue(mixed $value): mixed
     {
-        foreach ($keys as $sensitive) {
-            if ($caseSensitive ? $key === $sensitive : strtolower($key) === strtolower($sensitive)) {
+        if (is_array($value)) {
+            return $this->sanitizeArray($value);
+        }
+
+        if (is_object($value)) {
+            if ($value instanceof JsonSerializable) {
+                $serialized = $value->jsonSerialize();
+
+                return is_array($serialized)
+                    ? $this->sanitizeArray($serialized)
+                    : $this->sanitizeValue($serialized);
+            }
+
+            if ($value instanceof Traversable) {
+                return $this->sanitizeArray(iterator_to_array($value));
+            }
+
+            return $this->sanitizeArray(get_object_vars($value));
+        }
+
+        if (is_string($value) && $this->matchesValuePattern($value)) {
+            return $this->replacement;
+        }
+
+        return $value;
+    }
+
+    private function isSensitiveKey(string $key): bool
+    {
+        foreach ($this->keys as $sensitive) {
+            if ($this->keyMatches($key, $sensitive)) {
+                return true;
+            }
+        }
+
+        foreach ($this->patterns as $pattern) {
+            if ($this->safePregMatch($pattern, $key)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private function keyMatches(string $key, string $sensitive): bool
+    {
+        if ($this->caseSensitive) {
+            if ($key === $sensitive) {
+                return true;
+            }
+
+            return str_ends_with($key, $sensitive)
+                || str_ends_with($key, ucfirst($sensitive));
+        }
+
+        $left = strtolower($key);
+        $right = strtolower($sensitive);
+
+        if ($left === $right) {
+            return true;
+        }
+
+        $compactLeft = str_replace(['_', '-'], '', $left);
+        $compactRight = str_replace(['_', '-'], '', $right);
+
+        return $compactLeft === $compactRight
+            || str_ends_with($compactLeft, $compactRight);
+    }
+
+    private function matchesValuePattern(string $value): bool
+    {
+        foreach ($this->valuePatterns as $pattern) {
+            if ($this->safePregMatch($pattern, $value)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function safePregMatch(string $pattern, string $subject): bool
+    {
+        try {
+            set_error_handler(static fn(): bool => true);
+            $result = preg_match($pattern, $subject);
+            restore_error_handler();
+
+            return $result === 1;
+        } catch (Throwable) {
+            restore_error_handler();
+
+            return false;
+        }
     }
 }

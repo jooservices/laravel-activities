@@ -3,17 +3,23 @@
     "description": "Append-only MongoDB-backed activity timeline for Laravel applications.",
     "type": "library",
     "keywords": [
+        "php",
+        "php85",
         "laravel",
+        "laravel12",
+        "laravel13",
         "activities",
         "mongodb",
         "timeline",
-        "audit-log"
+        "audit-log",
+        "jooservices",
+        "composer-package"
     ],
     "license": "MIT",
     "authors": [
         {
-            "name": "JOOservices",
-            "email": "admin@jooservices.com"
+            "name": "Viet Vu",
+            "email": "jooservices@gmail.com"
         }
     ],
     "support": {
@@ -22,20 +28,26 @@
     },
     "require": {
         "php": "^8.5",
-        "illuminate/database": "^12.0|^13.0",
-        "illuminate/support": "^12.0|^13.0",
-        "jooservices/dto": "^1.0",
-        "jooservices/laravel-repository": "^1.7",
-        "mongodb/laravel-mongodb": "^4.0|^5.0"
+        "jooservices/dto": "^3.2",
+        "jooservices/exceptions": "^4.0",
+        "jooservices/laravel-repository": "^4.0",
+        "laravel/framework": "^12.0|^13.0",
+        "mongodb/laravel-mongodb": "^5.10"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "^3.65",
-        "laravel/pint": "^1.0",
+        "captainhook/captainhook": "^5.29",
+        "captainhook/plugin-composer": "^5.3",
+        "fakerphp/faker": "^1.24",
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "larastan/larastan": "^3.11",
+        "laravel/pint": "^1.30",
         "orchestra/testbench": "^10.0|^11.0",
-        "phpmd/phpmd": "^2.13",
-        "phpstan/phpstan": "^2.0",
-        "phpunit/phpunit": "^12.0",
-        "squizlabs/php_codesniffer": "^3.0"
+        "phpmd/phpmd": "^2.15",
+        "phpstan/phpstan": "^2.2",
+        "phpstan/phpstan-phpunit": "^2.0",
+        "phpstan/phpstan-strict-rules": "^2.0",
+        "phpunit/phpunit": "^12.0 || ^13.0",
+        "squizlabs/php_codesniffer": "^4.0"
     },
     "autoload": {
         "psr-4": {
@@ -48,27 +60,31 @@
         }
     },
     "scripts": {
-        "test": "vendor/bin/phpunit --no-coverage",
+        "test": "vendor/bin/phpunit --testsuite=unit,integration --no-coverage",
+        "test:unit": "vendor/bin/phpunit --testsuite=unit --no-coverage",
+        "test:integration": "vendor/bin/phpunit --testsuite=integration --no-coverage",
         "test:coverage": [
-            "vendor/bin/phpunit --coverage-clover build/coverage/clover.xml",
+            "XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-clover build/coverage/clover.xml",
             "@php scripts/check-coverage.php 90"
         ],
         "lint:pint": "vendor/bin/pint --test",
         "lint:pint:fix": "vendor/bin/pint",
-        "lint:phpstan": "XDEBUG_MODE=off vendor/bin/phpstan analyse --memory-limit=256M",
+        "lint:phpstan": "XDEBUG_MODE=off vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --memory-limit=512M",
         "lint:phpmd": "php -d error_reporting=6143 vendor/bin/phpmd src text phpmd.xml",
-        "lint:phpcs": "vendor/bin/phpcs src tests --standard=phpcs.xml",
+        "lint:phpcs": "vendor/bin/phpcs --standard=phpcs.xml",
         "lint:cs": "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff --sequential",
         "lint:cs:fix": "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --sequential",
+        "format:sanity": "php scripts/check-format-sanity.php",
         "lint": [
             "@lint:pint",
             "@lint:phpcs",
-            "@lint:phpstan"
-        ],
-        "lint:all": [
-            "@lint",
+            "@lint:phpstan",
             "@lint:phpmd",
             "@lint:cs"
+        ],
+        "lint:all": [
+            "@format:sanity",
+            "@lint"
         ],
         "lint:fix": [
             "@lint:pint:fix",
@@ -81,11 +97,15 @@
         "ci": [
             "@lint:all",
             "@test:coverage"
-        ]
+        ],
+        "post-install-cmd": "captainhook install --force --skip-existing",
+        "post-update-cmd": "captainhook install --force --skip-existing"
     },
     "config": {
         "sort-packages": true,
-        "allow-plugins": {}
+        "allow-plugins": {
+            "captainhook/plugin-composer": true
+        }
     },
     "extra": {
         "laravel": {

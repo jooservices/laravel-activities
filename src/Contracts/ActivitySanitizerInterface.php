@@ -7,8 +7,8 @@ namespace JOOservices\LaravelActivities\Contracts;
 interface ActivitySanitizerInterface
 {
     /**
-     * @param  array<string, mixed>|null  $payload
-     * @return array<string, mixed>|null
+     * @param  array<array-key, mixed>|null  $payload
+     * @return array<array-key, mixed>|null
      */
     public function sanitize(?array $payload): ?array;
 }

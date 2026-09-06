@@ -1,0 +1,58 @@
+{
+    "$schema": "https://captainhookphp.github.io/captainhook/schema.json",
+    "commit-msg": {
+        "enabled": true,
+        "actions": [
+            {
+                "action": "\\CaptainHook\\App\\Hook\\Message\\Action\\Regex",
+                "options": {
+                    "regex": "/^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\\(.+\\))?!?:\\s[A-Z].{0,99}$/",
+                    "error": "Commit message must follow Conventional Commits with an uppercase subject: <type>(<scope>): Subject"
+                }
+            }
+        ]
+    },
+    "pre-commit": {
+        "enabled": true,
+        "actions": [
+            {
+                "action": "\\CaptainHook\\App\\Hook\\PHP\\Action\\Linting",
+                "options": {
+                    "extensions": "php"
+                }
+            },
+            {
+                "action": "bash -lc 'command -v gitleaks >/dev/null || { echo \"gitleaks not on PATH; skipping staged scan (CI still scans)\"; exit 0; }; gitleaks protect --staged --verbose --redact --config=.gitleaks.toml'"
+            },
+            {
+                "action": "composer format:sanity"
+            },
+            {
+                "action": "composer lint:pint"
+            },
+            {
+                "action": "composer lint:phpcs"
+            },
+            {
+                "action": "composer lint:phpstan"
+            },
+            {
+                "action": "composer lint:phpmd"
+            },
+            {
+                "action": "composer lint:cs"
+            }
+        ]
+    },
+    "pre-push": {
+        "enabled": true,
+        "actions": [
+            {
+                "action": "bash -lc 'command -v gitleaks >/dev/null || { echo \"gitleaks not on PATH; skipping detect (CI still scans)\"; exit 0; }; gitleaks detect --verbose --redact --config=.gitleaks.toml'"
+            },
+            {
+                "action": "composer test"
+            }
+        ]
+    }
+}
