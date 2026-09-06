@@ -29,7 +29,7 @@ Append-only MongoDB-backed activity timeline for Laravel 12 and 13 applications.
 - PHP 8.5+
 - Laravel 12 or 13
 - MongoDB 6+
-- `mongodb/laravel-mongodb` ^5.7
+- `mongodb/laravel-mongodb` ^5.10
 
 ## Installation
 
