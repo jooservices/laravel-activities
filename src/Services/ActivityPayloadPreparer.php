@@ -33,7 +33,9 @@ final class ActivityPayloadPreparer
             'actor_type' => $record->actorType,
             'actor_id' => $record->actorId,
             'context' => $context,
-            'plugin_slug' => is_array($context) ? ($context['plugin_slug'] ?? null) : null,
+            'plugin_slug' => is_array($context) && is_string($context['plugin_slug'] ?? null)
+                ? $context['plugin_slug']
+                : null,
             'correlation_id' => $record->correlationId,
             'batch_id' => $record->batchId,
             'tenant_id' => $record->tenantId,

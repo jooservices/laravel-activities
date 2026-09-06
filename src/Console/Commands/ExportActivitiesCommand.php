@@ -60,30 +60,42 @@ final class ExportActivitiesCommand extends Command
             return self::FAILURE;
         }
 
-        if ($format === 'csv') {
-            fputcsv($handle, $this->csvHeaders());
+        if ($format === 'csv' && fputcsv($handle, $this->csvHeaders()) === false) {
+            $this->error('Unable to write CSV headers.');
+
+            return self::FAILURE;
         }
 
         $count = 0;
+        $failed = false;
         $chunkSize = max(1, (int) config('activities.export.chunk_size', 500));
 
-        $repository->exportChunk($filter, $chunkSize, function (Collection $batch) use ($handle, $format, &$count): void {
+        $repository->exportChunk($filter, $chunkSize, function (Collection $batch) use ($handle, $format, &$count, &$failed): void {
             foreach ($batch as $activity) {
-                if (! $activity instanceof Activity) {
+                if (! $activity instanceof Activity || $failed) {
                     continue;
                 }
 
                 $dto = ActivityDtoFactory::fromModel($activity);
+                $written = $format === 'csv'
+                    ? fputcsv($handle, $this->csvRow($dto))
+                    : fwrite($handle, (string) json_encode($dto->toArray(), JSON_THROW_ON_ERROR) . PHP_EOL);
 
-                if ($format === 'csv') {
-                    fputcsv($handle, $this->csvRow($dto));
-                } else {
-                    fwrite($handle, (string) json_encode($dto->toArray(), JSON_THROW_ON_ERROR) . PHP_EOL);
+                if ($written === false) {
+                    $failed = true;
+
+                    continue;
                 }
 
                 $count++;
             }
         });
+
+        if ($failed) {
+            $this->error('Export write failed before all records were written.');
+
+            return self::FAILURE;
+        }
 
         $this->finalizeExport($output, $handle, $count, $format);
 

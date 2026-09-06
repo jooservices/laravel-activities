@@ -62,7 +62,9 @@ final class ActivityQueryTest extends TestCase
         $recorder = $this->app->make(ActivityRecorderInterface::class);
         $query = $this->app->make(ActivityQueryInterface::class);
         $tenant = (string) $this->faker()->randomNumber(4, true);
-        $otherTenant = (string) $this->faker()->randomNumber(4, true);
+        do {
+            $otherTenant = (string) $this->faker()->randomNumber(4, true);
+        } while ($otherTenant === $tenant);
 
         $recorder->record(new ActivityRecordDto(
             subjectType: TestSubject::class,
