@@ -26,6 +26,7 @@ All notable changes to this project will be documented in this file.
 - Offset pagination is explicit (`pagination: offset`)
 - Prune uses `deleteMany`; export streams chunks with Mongo date filters
 - Production refuses `ACTIVITIES_STORE=array`
+- `activities:doctor --check-indexes` compares index keys, not only names
 - Writes use UTC (`CarbonImmutable::now('UTC')`)
 - Test database renamed to `jooservices_activities_testing`
 
