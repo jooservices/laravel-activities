@@ -14,7 +14,7 @@ final class ExportActivitiesCommandTest extends TestCase
     public function test_it_exports_jsonl_and_csv_with_formula_prefix(): void
     {
         $recorder = $this->app->make(ActivityRecorderInterface::class);
-        $formula = '=cmd|' . $this->faker()->word();
+        $formula = ' =' . $this->faker()->lexify('cmd????');
 
         $recorder->record(new ActivityRecordDto(
             subjectType: TestSubject::class,

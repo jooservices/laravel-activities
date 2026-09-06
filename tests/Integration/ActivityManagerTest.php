@@ -17,7 +17,17 @@ final class ActivityManagerTest extends TestCase
         $actor = new TestSubject($this->faker()->numberBetween(1, 99));
         $activity = $this->faker()->slug(2);
 
-        Activity::recordFor($subject, $activity, $actor);
+        Activity::recordFor(
+            $subject,
+            $activity,
+            $actor,
+            $this->faker()->sentence(),
+            ['url' => $this->faker()->url()],
+            ['plugin_slug' => $this->faker()->slug(1)],
+            $this->faker()->uuid(),
+            $this->faker()->uuid(),
+            (string) $this->faker()->randomNumber(4, true),
+        );
 
         $forSubject = Activity::forSubject($subject);
         $forActor = Activity::forActor($actor);

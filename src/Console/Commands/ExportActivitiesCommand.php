@@ -207,7 +207,9 @@ final class ExportActivitiesCommand extends Command
             $text = (string) $value;
         }
 
-        if ($text !== '' && in_array($text[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+        $significant = ltrim($text, " \t\r\n\0\x0B");
+
+        if ($significant !== '' && in_array($significant[0], ['=', '+', '-', '@'], true)) {
             return "'" . $text;
         }
 
