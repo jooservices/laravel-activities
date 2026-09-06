@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - CSV export with formula-injection prefix (`activities:export --format=csv`)
 - `ActivityManager` facade root, `forActor()` helper
 - JOO hygiene: Pint `per`, PHPStan max, CaptainHook, Docker, governance docs
+- Dev toolchain: PHPUnit `^12|^13`, PHPCS `^4`, Pint `^1.30`, Larastan `^3.11`
 
 ### Changed
 
