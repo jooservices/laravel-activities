@@ -16,21 +16,30 @@ use RuntimeException;
 
 final class ActivityManagerDelegationTest extends UnitTestCase
 {
-    public function test_for_actor_falls_back_to_list_when_query_has_no_helper(): void
+    public function test_for_actor_delegates_to_query(): void
     {
         $expected = new ActivityListDto(items: [], perPage: 1);
         $query = new class ($expected) implements ActivityQueryInterface {
+            public bool $forActorCalled = false;
+
             public function __construct(private readonly ActivityListDto $expected)
             {
             }
 
             public function list(ActivityFilterDto $filter): ActivityListDto
             {
-                return $this->expected;
+                throw new RuntimeException('list should not be used for forActor');
             }
 
             public function forSubject(object $subject, ?ActivityFilterDto $filter = null): ActivityListDto
             {
+                throw new RuntimeException('forSubject should not be used for forActor');
+            }
+
+            public function forActor(object $actor, ?ActivityFilterDto $filter = null): ActivityListDto
+            {
+                $this->forActorCalled = true;
+
                 return $this->expected;
             }
         };
@@ -57,6 +66,7 @@ final class ActivityManagerDelegationTest extends UnitTestCase
 
         $manager = new ActivityManager($recorder, $query);
 
-        $this->assertSame($expected, $manager->forActor(new TestSubject(1)));
+        $this->assertSame($expected, $manager->forActor(new TestSubject($this->faker()->numberBetween(1, 99))));
+        $this->assertTrue($query->forActorCalled);
     }
 }

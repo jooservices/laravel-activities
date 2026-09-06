@@ -62,21 +62,21 @@ final class ActivityFilterMatcher
      */
     private static function matchesContext(array $row, ActivityFilterDto $filter): bool
     {
-        if ($filter->contextKey === null || $filter->contextKey === '') {
+        if ($filter->contextKey === null || $filter->contextKey === '' || $filter->contextValue === null) {
             return true;
         }
 
         if ($filter->contextKey === 'plugin_slug') {
             $top = $row['plugin_slug'] ?? null;
             if ($top !== null) {
-                return (string) $top === (string) $filter->contextValue;
+                return (string) $top === $filter->contextValue;
             }
         }
 
         $context = is_array($row['context'] ?? null) ? $row['context'] : [];
         $contextValue = $context[$filter->contextKey] ?? null;
 
-        return (string) $contextValue === (string) $filter->contextValue;
+        return (string) $contextValue === $filter->contextValue;
     }
 
     /**

@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - Prune uses `deleteMany`; export streams chunks with Mongo date filters
 - Production refuses `ACTIVITIES_STORE=array`
 - `activities:doctor --check-indexes` compares index keys, not only names
+- Array-store context matching skips a key when `contextValue` is null (same as Mongo)
 - Writes use UTC (`CarbonImmutable::now('UTC')`)
 - Test database renamed to `jooservices_activities_testing`
 

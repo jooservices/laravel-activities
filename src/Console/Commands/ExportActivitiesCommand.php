@@ -70,7 +70,7 @@ final class ExportActivitiesCommand extends Command
         $failed = false;
         $chunkSize = max(1, (int) config('activities.export.chunk_size', 500));
 
-        $repository->exportChunk($filter, $chunkSize, function (Collection $batch) use ($handle, $format, &$count, &$failed): void {
+        $repository->exportChunk($filter, $chunkSize, function (Collection $batch, int $page) use ($handle, $format, &$count, &$failed): void {
             foreach ($batch as $activity) {
                 if (! $activity instanceof Activity || $failed) {
                     continue;

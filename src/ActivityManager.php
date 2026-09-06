@@ -10,7 +10,6 @@ use JOOservices\LaravelActivities\Dto\ActivityDto;
 use JOOservices\LaravelActivities\Dto\ActivityFilterDto;
 use JOOservices\LaravelActivities\Dto\ActivityListDto;
 use JOOservices\LaravelActivities\Dto\ActivityRecordDto;
-use JOOservices\LaravelActivities\Support\SubjectReference;
 
 final class ActivityManager implements ActivityQueryInterface, ActivityRecorderInterface
 {
@@ -61,19 +60,6 @@ final class ActivityManager implements ActivityQueryInterface, ActivityRecorderI
 
     public function forActor(object $actor, ?ActivityFilterDto $filter = null): ActivityListDto
     {
-        if (method_exists($this->query, 'forActor')) {
-            $list = $this->query->forActor($actor, $filter);
-            if ($list instanceof ActivityListDto) {
-                return $list;
-            }
-        }
-
-        $actorRef = SubjectReference::fromObject($actor);
-        $base = $filter ?? new ActivityFilterDto();
-
-        return $this->list($base->with(
-            actorType: $actorRef->type,
-            actorId: $actorRef->id,
-        ));
+        return $this->query->forActor($actor, $filter);
     }
 }
