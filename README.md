@@ -1,12 +1,13 @@
-# JOOservices Laravel Activities
+# jooservices/laravel-activities
 
-[![codecov](https://codecov.io/gh/jooservices/laravel-activities/branch/master/graph/badge.svg)](https://codecov.io/gh/jooservices/laravel-activities)
-[![CI](https://github.com/jooservices/laravel-activities/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/jooservices/laravel-activities/actions/workflows/ci.yml)
+[![Coverage (develop)](https://codecov.io/gh/jooservices/laravel-activities/branch/develop/graph/badge.svg)](https://codecov.io/gh/jooservices/laravel-activities/branch/develop)
+[![CI](https://github.com/jooservices/laravel-activities/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/jooservices/laravel-activities/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/jooservices/laravel-activities/badge)](https://securityscorecards.dev/viewer/?uri=github.com/jooservices/laravel-activities)
 [![PHP Version](https://img.shields.io/badge/PHP-8.5%2B-blue.svg)](https://www.php.net/)
-[![Release](https://img.shields.io/badge/version-4.0.0-blue.svg)](CHANGELOG.md)
+[![GitHub Release](https://img.shields.io/github/v/release/jooservices/laravel-activities?display_name=tag)](https://github.com/jooservices/laravel-activities/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Packagist Version](https://img.shields.io/packagist/v/jooservices/laravel-activities)](https://packagist.org/packages/jooservices/laravel-activities)
+[![Total Downloads](https://img.shields.io/packagist/dt/jooservices/laravel-activities)](https://packagist.org/packages/jooservices/laravel-activities)
 
 Append-only MongoDB-backed activity timeline for Laravel 12 and 13 applications.
 
