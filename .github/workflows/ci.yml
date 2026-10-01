@@ -103,6 +103,9 @@ jobs:
       - name: Run tests with coverage
         if: matrix.coverage
         run: composer test:coverage
+      - name: Check coverage threshold
+        if: matrix.coverage
+        run: composer coverage:check
       - name: Upload coverage to Codecov
         if: matrix.coverage && env.CODECOV_TOKEN != '' && hashFiles('build/coverage/clover.xml') != ''
         env:
