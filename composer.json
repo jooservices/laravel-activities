@@ -64,9 +64,9 @@
         "test:unit": "vendor/bin/phpunit --testsuite=unit --no-coverage",
         "test:integration": "vendor/bin/phpunit --testsuite=integration --no-coverage",
         "test:coverage": [
-            "XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-clover build/coverage/clover.xml",
-            "@php scripts/check-coverage.php 90"
+            "XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-clover build/coverage/clover.xml"
         ],
+        "coverage:check": "@php scripts/check-coverage.php 90",
         "lint:pint": "vendor/bin/pint --test",
         "lint:pint:fix": "vendor/bin/pint",
         "lint:phpstan": "XDEBUG_MODE=off vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --memory-limit=512M",
@@ -96,7 +96,8 @@
         ],
         "ci": [
             "@lint:all",
-            "@test:coverage"
+            "@test:coverage",
+            "@coverage:check"
         ],
         "post-install-cmd": "captainhook install --force --skip-existing",
         "post-update-cmd": "captainhook install --force --skip-existing"
