@@ -1,0 +1,11 @@
+{
+  "name": "@jooservices/laravel-activities-commitlint",
+  "private": true,
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.2.3"
+  }
+}
