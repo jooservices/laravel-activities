@@ -16,15 +16,31 @@ jobs:
   commitlint:
     name: Validate commit messages
     runs-on: ubuntu-latest
+    container: node:24-bookworm
     timeout-minutes: 10
     env:
       DEPENDABOT_PR: ${{ github.event.pull_request.user.login == 'dependabot[bot]' }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
     steps:
-      - name: Checkout
+      - name: Checkout pull request history
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Checkout trusted Commitlint configuration
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: trusted-config
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: |
+            .github/commitlint.config.mjs
+            .github/commitlint/package.json
+            .github/commitlint/package-lock.json
+          sparse-checkout-cone-mode: false
 
       - name: Reject mixed-authorship Dependabot PR
         if: env.DEPENDABOT_PR == 'true'
@@ -63,7 +79,13 @@ jobs:
               );
             }
 
-      - name: Validate PR commits
-        uses: wagoid/commitlint-github-action@v6
-        with:
-          configFile: .github/commitlint.config.mjs
+      - name: Install trusted Commitlint CLI
+        run: npm ci --ignore-scripts --prefix trusted-config/.github/commitlint
+
+      - name: Validate all PR commits
+        run: |
+          trusted-config/.github/commitlint/node_modules/.bin/commitlint \
+            --from "$BASE_SHA" \
+            --to "$HEAD_SHA" \
+            --config trusted-config/.github/commitlint.config.mjs \
+            --verbose

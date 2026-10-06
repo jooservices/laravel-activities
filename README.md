@@ -53,7 +53,10 @@ php artisan activities:ensure-indexes
 ## Quick start
 
 ```php
+use App\Models\Post;
 use JOOservices\LaravelActivities\Facades\Activity;
+
+$subject = Post::query()->firstOrFail();
 
 Activity::recordFor(
     subject: $subject,
