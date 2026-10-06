@@ -1,13 +1,13 @@
 # jooservices/laravel-activities
 
-[![Coverage (develop)](https://codecov.io/gh/jooservices/laravel-activities/branch/develop/graph/badge.svg)](https://codecov.io/gh/jooservices/laravel-activities/branch/develop)
 [![CI](https://github.com/jooservices/laravel-activities/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/jooservices/laravel-activities/actions/workflows/ci.yml)
+[![Coverage (develop)](https://codecov.io/gh/jooservices/laravel-activities/branch/develop/graph/badge.svg)](https://codecov.io/gh/jooservices/laravel-activities/branch/develop)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/jooservices/laravel-activities/badge)](https://securityscorecards.dev/viewer/?uri=github.com/jooservices/laravel-activities)
 [![PHP Version](https://img.shields.io/badge/PHP-8.5%2B-blue.svg)](https://www.php.net/)
 [![GitHub Release](https://img.shields.io/github/v/release/jooservices/laravel-activities?display_name=tag)](https://github.com/jooservices/laravel-activities/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Packagist Version](https://img.shields.io/packagist/v/jooservices/laravel-activities)](https://packagist.org/packages/jooservices/laravel-activities)
 [![Total Downloads](https://img.shields.io/packagist/dt/jooservices/laravel-activities)](https://packagist.org/packages/jooservices/laravel-activities)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Append-only MongoDB-backed activity timeline for Laravel 12 and 13 applications.
 
@@ -27,7 +27,7 @@ Append-only MongoDB-backed activity timeline for Laravel 12 and 13 applications.
 
 ## Requirements
 
-- PHP 8.5+
+- PHP ^8.5
 - Laravel 12 or 13
 - MongoDB 6+
 - `mongodb/laravel-mongodb` ^5.10
@@ -50,67 +50,52 @@ Ensure indexes:
 php artisan activities:ensure-indexes
 ```
 
-## Usage
+## Quick start
 
 ```php
-use JOOservices\LaravelActivities\Contracts\ActivityRecorderInterface;
+use App\Models\Post;
+use JOOservices\LaravelActivities\Facades\Activity;
 
-$activities->recordFor(
-    subject: $target,
-    activity: 'crawl_target.created',
-    actor: $actor,
-    description: 'Created crawl target',
-    data: ['url' => $url],
-    context: ['plugin_slug' => $slug],
-    correlationId: $correlationId,
-    tenantId: $tenantId,
+$subject = Post::query()->firstOrFail();
+
+Activity::recordFor(
+    subject: $subject,
+    activity: 'post.updated',
 );
 ```
 
-Query:
+See [Recording and querying](docs/02-user-guide/01-recording-and-querying.md) for injected services, filters, and pagination.
 
-```php
-use JOOservices\LaravelActivities\Dto\ActivityFilterDto;
-
-$timeline = $query->list(new ActivityFilterDto(
-    contextKey: 'plugin_slug',
-    contextValue: $slug,
-    tenantId: $tenantId,
-    limit: 50,
-));
-
-$next = $timeline->nextCursor;
-$hasMore = $timeline->hasMore;
-```
-
-Offset pagination (when a total is required):
-
-```php
-$list = $query->list(new ActivityFilterDto(
-    pagination: 'offset',
-    page: 2,
-    limit: 50,
-));
-```
-
-## Relationship to audit systems
+## Design notes
 
 This package stores **product timeline activities** only. Ops logs belong in
 `jooservices/laravel-logging`. Compliance events belong in `jooservices/laravel-events`.
 
 ## Documentation
 
-- [`docs/README.md`](docs/README.md)
+- [Documentation index](docs/README.md)
+- [Installation](docs/01-getting-started/01-installation.md)
+- [Recording and querying](docs/02-user-guide/01-recording-and-querying.md)
+- [Changelog](CHANGELOG.md)
 - [`UPGRADE.md`](UPGRADE.md)
-- [`AGENTS.md`](AGENTS.md)
+- [Workflows](WORKFLOWS.md)
 
-## Quality
+## Development
 
 ```bash
+composer check
 composer ci
 ```
 
-Coverage gate: 90% minimum (`composer test:coverage`).
+`composer ci` enforces the 90% minimum coverage gate. See [Contributing](CONTRIBUTING.md) for local setup and contribution guidance.
+
+## Community
+
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Support](SUPPORT.md)
+- [Governance](GOVERNANCE.md)
 
 ## License
 
